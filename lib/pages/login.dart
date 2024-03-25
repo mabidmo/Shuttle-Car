@@ -1,5 +1,6 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shuttle_car/pages/signup.dart';
 
@@ -11,6 +12,37 @@ class login extends StatefulWidget {
 }
 
 class _loginState extends State<login> {
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  String message = '';
+
+  Future<void> loginUser(String username, String password) async {
+    final response = await http.post(
+      Uri.parse(
+          'http://192.168.1.5:8080/ShuttleCarAPI/loginn.php'), // Sesuaikan URL dengan URL backend Anda
+      body: {
+        'username': username,
+        'password': password,
+      },
+    );
+
+    final responseData = json.decode(response.body);
+
+    setState(() {
+      message = responseData['message'];
+    });
+
+    if (response.statusCode == 200) {
+      // Login berhasil
+      print(responseData['user']);
+      // Lakukan navigasi ke halaman berikutnya atau lakukan tindakan lain sesuai kebutuhan Anda
+      // Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // Login gagal
+      print('Login gagal: $message');
+    }
+  }
+
   bool _showPassword = false;
   @override
   Widget build(BuildContext context) {
@@ -50,6 +82,7 @@ class _loginState extends State<login> {
                   height: 20,
                 ),
                 TextField(
+                  controller: usernameController,
                   decoration: InputDecoration(
                     prefixIcon: Icon(Icons.person),
                     labelText: 'Email',
@@ -62,6 +95,7 @@ class _loginState extends State<login> {
                   height: 10,
                 ),
                 TextField(
+                  controller: passwordController,
                   obscureText: !_showPassword,
                   decoration: InputDecoration(
                     prefixIcon: Icon(Icons.lock),
@@ -81,13 +115,31 @@ class _loginState extends State<login> {
                   ),
                 ),
                 SizedBox(
-                  height: 30,
+                  height: 15,
+                ),
+                Text(
+                  message,
+                  style: TextStyle(color: Colors.red),
+                ),
+                SizedBox(
+                  height: 15,
                 ),
                 Container(
                   width: 360,
                   height: 50,
                   child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        String username = usernameController.text.trim();
+                        String password = passwordController.text.trim();
+                        if (username.isNotEmpty && password.isNotEmpty) {
+                          loginUser(username, password);
+                        } else {
+                          setState(() {
+                            message =
+                                'Username dan password tidak boleh kosonggg';
+                          });
+                        }
+                      },
                       style: ButtonStyle(
                           backgroundColor: MaterialStatePropertyAll(Colors.red),
                           shape: MaterialStatePropertyAll(

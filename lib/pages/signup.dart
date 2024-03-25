@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shuttle_car/pages/login.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:email_validator/email_validator.dart';
 
 class signup extends StatefulWidget {
   const signup({super.key});
@@ -10,6 +13,38 @@ class signup extends StatefulWidget {
 }
 
 class _signupState extends State<signup> {
+  TextEditingController nameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  String message = '';
+
+  Future<void> register(String username, String password, String email) async {
+    final response = await http.post(
+      Uri.parse(
+          'http://192.168.1.5:8080/ShuttleCarAPI/registerr.php'), // Sesuaikan URL dengan URL backend Anda
+      body: {
+        'username': username,
+        'password': password,
+        'email': email,
+      },
+    );
+
+    final responseData = json.decode(response.body);
+
+    setState(() {
+      message = responseData['message'];
+    });
+
+    if (response.statusCode == 200) {
+      // Registrasi berhasil
+      print('Registrasi berhasil: $message');
+      // Lakukan navigasi ke halaman login atau lakukan tindakan lain sesuai kebutuhan Anda
+    } else {
+      // Registrasi gagal
+      print('Registrasi gagal: $message');
+    }
+  }
+
   bool _showPassword = false;
   @override
   Widget build(BuildContext context) {
@@ -49,10 +84,11 @@ class _signupState extends State<signup> {
                   height: 20,
                 ),
                 TextField(
+                  controller: nameController,
                   decoration: InputDecoration(
                     prefixIcon: Icon(Icons.person),
-                    labelText: 'Email',
-                    hintText: 'Email UISI',
+                    labelText: 'Name',
+                    hintText: 'Nama Anda',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
@@ -61,6 +97,20 @@ class _signupState extends State<signup> {
                   height: 10,
                 ),
                 TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.email),
+                    labelText: 'Email',
+                    hintText: 'Email Anda',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                TextField(
+                  controller: passwordController,
                   obscureText: !_showPassword,
                   decoration: InputDecoration(
                     prefixIcon: Icon(Icons.lock),
@@ -74,48 +124,57 @@ class _signupState extends State<signup> {
                             ? Icons.visibility
                             : Icons.visibility_off)),
                     labelText: 'Password',
-                    hintText: 'Password',
+                    hintText: 'Password anda',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
                 SizedBox(
-                  height: 10,
+                  height: 15,
                 ),
-                TextField(
-                  obscureText: !_showPassword,
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _showPassword = !_showPassword;
-                          });
-                        },
-                        icon: Icon(_showPassword
-                            ? Icons.visibility
-                            : Icons.visibility_off)),
-                    labelText: 'Re-Password',
-                    hintText: 'Ketik ulang password',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
+                Text(
+                  message,
+                  style: TextStyle(color: Colors.red),
                 ),
                 SizedBox(
-                  height: 30,
+                  height: 15,
                 ),
                 Container(
                   width: 360,
                   height: 50,
                   child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        String username = nameController.text.trim();
+                        String password = passwordController.text.trim();
+                        String email = emailController.text.trim();
+                        if (username.isEmpty ||
+                            password.isEmpty ||
+                            email.isEmpty) {
+                          setState(() {
+                            message = 'Harap isi semua kolom';
+                          });
+                        } else if (!EmailValidator.validate(email)) {
+                          setState(() {
+                            message = 'Email tidak valid';
+                          });
+                        } else if (password.length < 8 ||
+                            !password.contains(RegExp(r'[A-Z]'))) {
+                          setState(() {
+                            message =
+                                'Password harus terdiri dari minimal 8 karakter dan memiliki setidaknya satu huruf besar';
+                          });
+                        } else {
+                          // Semua validasi berhasil, lakukan registrasi
+                          register(username, password, email);
+                        }
+                      },
                       style: ButtonStyle(
                           backgroundColor: MaterialStatePropertyAll(Colors.red),
                           shape: MaterialStatePropertyAll(
                               RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14)))),
                       child: Text(
-                        'Login',
+                        'Register',
                         style: TextStyle(color: Colors.white),
                       )),
                 ),
